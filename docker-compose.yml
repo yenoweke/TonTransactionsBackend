@@ -1,74 +1,55 @@
-# Docker Compose file for Vapor
-#
-# Install Docker on your system to run and test
-# your Vapor app in a production-like environment.
-#
-# Note: This file is intended for testing and does not
-# implement best practices for a production deployment.
-#
-# Learn more: https://docs.docker.com/compose/reference/
-#
-#   Build images: docker-compose build
-#      Start app: docker-compose up app
-# Start database: docker-compose up db
-# Run migrations: docker-compose run migrate
-#       Stop all: docker-compose down (add -v to wipe db)
-#
 version: '3.7'
 
-volumes:
-  db_data:
+networks:
+  web:
+    external: true
+  internal:
+    external: false
 
-x-shared_environment: &shared_environment
-  LOG_LEVEL: ${LOG_LEVEL:-debug}
-  DATABASE_HOST: db
-  DATABASE_NAME: vapor_database
-  DATABASE_USERNAME: vapor_username
-  DATABASE_PASSWORD: vapor_password
+volumes:
+  ton_mongo_data:
   
 services:
   app:
-    image: ton-transactions-back:latest
+    image: ton-transactions-back:0.1.0
+    restart: unless-stopped
     build:
       context: .
     environment:
-      <<: *shared_environment
+      - LOG_LEVEL=${LOG_LEVEL:-debug}
+      - TT_MONGODB_AUTH_USERNAME=${MONGO_ROOT_USER}
+      - TT_MONGODB_AUTH_PASSWORD=${MONGO_ROOT_PASSWORD}
+    labels:
+      - traefik.http.routers.app.rule=Host(`api.ton-snow.app`)
+      - traefik.http.routers.app.tls=true
+      - traefik.http.routers.app.tls.certresolver=lets-encrypt
     depends_on:
-      - db
+      - mongo
     ports:
       - '8080:8080'
-    # user: '0' # uncomment to run as root for testing purposes even though Dockerfile defines 'vapor' user.
     command: ["serve", "--env", "production", "--hostname", "0.0.0.0", "--port", "8080"]
-  migrate:
-    image: ton-transactions-back:latest
-    build:
-      context: .
+  mongo:
+    image: mongo
     environment:
-      <<: *shared_environment
-    depends_on:
-      - db
-    command: ["migrate", "--yes"]
-    deploy:
-      replicas: 0
-  revert:
-    image: ton-transactions-back:latest
-    build:
-      context: .
-    environment:
-      <<: *shared_environment
-    depends_on:
-      - db
-    command: ["migrate", "--revert", "--yes"]
-    deploy:
-      replicas: 0
-  db:
-    image: postgres:14-alpine
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USER}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
+      - MONGO_INITDB_DATABASE=project
     volumes:
-      - db_data:/var/lib/postgresql/data/pgdata
-    environment:
-      PGDATA: /var/lib/postgresql/data/pgdata
-      POSTGRES_USER: vapor_username
-      POSTGRES_PASSWORD: vapor_password
-      POSTGRES_DB: vapor_database
+      - ton_mongo_data:/data/db
     ports:
-      - '5432:5432'
+      - "27017:27017"
+  mongo-express:
+    image: mongo-express
+    environment:
+      - ME_CONFIG_MONGODB_SERVER=mongo
+      - ME_CONFIG_MONGODB_PORT=27017
+      - ME_CONFIG_MONGODB_ENABLE_ADMIN=true
+      - ME_CONFIG_MONGODB_AUTH_DATABASE=admin
+      - ME_CONFIG_MONGODB_AUTH_USERNAME=${MONGO_ROOT_USER}
+      - ME_CONFIG_MONGODB_AUTH_PASSWORD=${MONGO_ROOT_PASSWORD}
+      - ME_CONFIG_BASICAUTH_USERNAME=${MONGOEXPRESS_LOGIN}
+      - ME_CONFIG_BASICAUTH_PASSWORD=${MONGOEXPRESS_PASSWORD}
+    depends_on:
+      - mongo
+    ports:
+      - "8888:8081"

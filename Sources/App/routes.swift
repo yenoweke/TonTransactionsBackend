@@ -1,4 +1,3 @@
-import Fluent
 import Vapor
 
 func routes(_ app: Application) throws {
@@ -10,5 +9,14 @@ func routes(_ app: Application) throws {
         "Hello, world!"
     }
 
-    try app.register(collection: TodoController())
+    
+    try app.register(collection: DeviceController())
+    try app.register(collection: DeviceTokenController())
+    try app.register(collection: DeviceWatchAccountController())
+    
+    if app.environment == .development {
+        try app.register(collection: DebugController())
+    }
+    
+    
 }

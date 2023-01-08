@@ -1,21 +1,31 @@
-import Fluent
-import FluentPostgresDriver
 import Vapor
+import APNS
+import QueuesMongoDriver
 
-// configures your application
-public func configure(_ app: Application) throws {
-    // uncomment to serve files from /Public folder
-    // app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
+public func configure(_ app: Application) async throws {
 
-    app.databases.use(.postgres(
-        hostname: Environment.get("DATABASE_HOST") ?? "localhost",
-        port: Environment.get("DATABASE_PORT").flatMap(Int.init(_:)) ?? PostgresConfiguration.ianaPortNumber,
-        username: Environment.get("DATABASE_USERNAME") ?? "vapor_username",
-        password: Environment.get("DATABASE_PASSWORD") ?? "vapor_password",
-        database: Environment.get("DATABASE_NAME") ?? "vapor_database"
-    ), as: .psql)
+//    app.logger.logLevel = .debug
+    let mongoUser = Environment.get("TT_MONGODB_AUTH_USERNAME") ?? "devroot"
+    let mongoPassword = Environment.get("TT_MONGODB_AUTH_PASSWORD") ?? "devroot"
+    
+    try await app.initializeMongoDB(connectionString: "mongodb://\(mongoUser):\(mongoPassword)@localhost/project")
+    try await app.queues.setupMongo(using: app.mongoDB)
+    app.queues.use(.mongodb(app.mongoDB))
 
-    app.migrations.add(CreateTodo())
+    app.queues.schedule(AccountUpdatesSchedulerJob()).everySecond()
+
+    app.queues.add(SendPushJob())
+    app.queues.add(UpdateTonAccountInfoJob())
+    app.queues.add(TonAccountUpdatedJob())
+
+    app.queues.configuration.workerCount = 5
+    try app.queues.startInProcessJobs(on: .default)
+    try app.queues.startScheduledJobs()
+
+    app.tonAPIFactory.use(TonAPI.init)
+    app.deviceServiceFactory.use(DeviceService.init)
+    app.tonAccountServiceFactory.use(TonAccountService.init)
+
 
     // register routes
     try routes(app)
