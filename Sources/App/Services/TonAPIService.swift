@@ -6,7 +6,7 @@ struct TonAPI {
     struct Context {
         let db: MeowDatabase
         let client: Client
-        let token: String = Environment.get("TT_TON_API_KEY") ?? tonAPIKey
+        let token: String = Environment.get("TT_TON_API_KEY")!
     }
 
     private let token: String

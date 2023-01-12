@@ -5,10 +5,13 @@ import QueuesMongoDriver
 public func configure(_ app: Application) async throws {
 
 //    app.logger.logLevel = .debug
-    let mongoUser = Environment.get("TT_MONGODB_AUTH_USERNAME") ?? "devroot"
-    let mongoPassword = Environment.get("TT_MONGODB_AUTH_PASSWORD") ?? "devroot"
     
-    try await app.initializeMongoDB(connectionString: "mongodb://\(mongoUser):\(mongoPassword)@localhost/project")
+    let mongoUser = Environment.get("TT_MONGODB_AUTH_USERNAME")!
+    let mongoPassword = Environment.get("TT_MONGODB_AUTH_PASSWORD")!
+    let mongoHost = Environment.get("TT_MONGODB_HOST")!
+    let mongoDatabase = Environment.get("TT_MONGODB_DATABASE")!
+    
+    try await app.initializeMongoDB(connectionString: "mongodb://\(mongoUser):\(mongoPassword)@\(mongoHost)/\(mongoDatabase)")
     try await app.queues.setupMongo(using: app.mongoDB)
     app.queues.use(.mongodb(app.mongoDB))
 

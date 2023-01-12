@@ -7,4 +7,3 @@ DerivedData/
 db.sqlite
 .swiftpm
 .vscode
-Sources/App/Configuration/AppConfig.swift
