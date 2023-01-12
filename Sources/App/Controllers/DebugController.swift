@@ -3,6 +3,7 @@ import Vapor
 struct DebugController: RouteCollection {
     func boot(routes: RoutesBuilder) throws {
         let debug = routes.grouped("debug")
+        debug.get("device_list", use: self.deviceList)
         debug.post("update_account", use: self.updateAccount)
         
         debug.group(":deviceID") { route in
@@ -25,6 +26,16 @@ struct DebugController: RouteCollection {
         )
         try await req.queue.dispatch(SendPushJob.self, alert)
         return .ok
+    }
+    
+    func deviceList(req: Request) async throws -> DeviceList.Response {
+        let models = try await req.deviceService.all()
+        let items: [DeviceList.Response.Item] = models.compactMap { deviceModel in
+            UUID(uuidString: deviceModel._id).map {
+                DeviceList.Response.Item(deviceID: $0, subsribedOn: deviceModel.subsribedOnAccounts ?? [])
+            }
+        }
+        return DeviceList.Response(items: items)
     }
     
     func updateAccount(req: Request) async throws -> HTTPStatus {
@@ -53,6 +64,17 @@ extension DebugController {
     enum UpdateAccount {
         struct Request: Content {
             let account: String
+        }
+    }
+    
+    enum DeviceList {
+        struct Response: Content {
+            struct Item: Content {
+                let deviceID: UUID
+                let subsribedOn: [String]
+            }
+            
+            let items: [Item]
         }
     }
 }

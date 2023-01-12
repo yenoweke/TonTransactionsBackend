@@ -27,6 +27,7 @@ public func configure(_ app: Application) async throws {
     app.tonAccountServiceFactory.use(TonAccountService.init)
 
 
+
     // register routes
     try routes(app)
 }

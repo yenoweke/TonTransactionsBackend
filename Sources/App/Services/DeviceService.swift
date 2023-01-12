@@ -28,6 +28,9 @@ struct DeviceService {
     func create(deviceID: UUID, signature: String) async throws {
         let reference = Reference<DeviceModel>(unsafeTo: deviceID.uuidString)
         if try await reference.exists(in: self.meow) {
+            if let resolved = try await reference.resolveIfPresent(in: self.meow), resolved.signature == signature {
+                return
+            }
             throw Abort(.badRequest)
         }
         let device = DeviceModel(_id: deviceID.uuidString, signature: signature)
