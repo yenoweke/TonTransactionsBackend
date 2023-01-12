@@ -7,3 +7,5 @@ DerivedData/
 db.sqlite
 .swiftpm
 .vscode
+.env.development
+.env.production
