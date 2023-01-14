@@ -7,6 +7,7 @@ struct DeviceTokenController: RouteCollection {
             .grouped(CheckSignatureMiddleware())
             .group(":deviceID") { route in
                 route.post("push_token", use: self.subscribe)
+                route.post("push_disabled", use: self.pushDisabled)
             }
     }
     
@@ -21,6 +22,14 @@ struct DeviceTokenController: RouteCollection {
             for: deviceID,
             pushToken: request.token
         )
+        return .ok
+    }
+    
+    func pushDisabled(req: Request) async throws -> HTTPStatus {
+        guard let deviceID: UUID = req.parameters.get("deviceID") else {
+            throw Abort(.notFound)
+        }
+        try await req.deviceService.disablePushToken(for: deviceID)
         return .ok
     }
 }

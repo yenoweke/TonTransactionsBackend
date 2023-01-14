@@ -104,7 +104,18 @@ struct DeviceService {
             throw Abort(.badRequest)
         }
     }
-
+    
+    func disablePushToken(for deviceID: UUID) async throws {
+        try await self.mongo[DeviceModel.collectionName].updateOne(
+            where: DeviceModel.find(by: deviceID),
+            to: [
+                "$set": [
+                    "pushToken.isEnabled": false
+                ]
+            ]
+        )
+    }
+    
     func delete(_ deviceID: UUID) async throws {
 //        let model = try await DeviceModel.find(deviceID, on: self.db)
 //        try await model?.delete(on: self.db)
