@@ -11,7 +11,7 @@ volumes:
   
 services:
   app:
-    image: ton-transactions-back:0.1.0
+    image: ton-transactions-back:0.1.1
     restart: unless-stopped
     build:
       context: .
