@@ -23,8 +23,14 @@ services:
       - TT_MONGODB_HOST=${TT_MONGODB_HOST}
     labels:
       - traefik.http.routers.app.rule=Host(`api.ton-snow.app`)
+      - traefik.http.routers.app.entrypoints=websecure
       - traefik.http.routers.app.tls=true
       - traefik.http.routers.app.tls.certresolver=lets-encrypt
+    volumes:
+      - ./.env.production:/app/.env.production
+    networks:
+      - web
+      - internal
     depends_on:
       - mongo
     ports:
@@ -38,6 +44,10 @@ services:
       - MONGO_INITDB_DATABASE=${TT_MONGODB_DATABASE}
     volumes:
       - ton_mongo_data:/data/db
+    networks:
+      - internal
+    labels:
+      - traefik.enable=false
     ports:
       - "27017:27017"
   mongo-express:
@@ -53,5 +63,10 @@ services:
       - ME_CONFIG_BASICAUTH_PASSWORD=${TT_MONGOEXPRESS_PASSWORD}
     depends_on:
       - mongo
+    labels:
+      - traefik.enable=false
+    networks:
+      - internal
+      - web
     ports:
       - "8888:8081"
