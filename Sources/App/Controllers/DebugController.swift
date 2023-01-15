@@ -22,7 +22,8 @@ struct DebugController: RouteCollection {
         let alert = PushPayload(
             token: token,
             title: "AONTHER One message",
-            message: "xxxx"
+            message: "xxxx",
+            url: nil
         )
         try await req.queue.dispatch(SendPushJob.self, alert)
         return .ok

@@ -37,12 +37,14 @@ struct TonAccountUpdatedJob: AsyncJob {
             as: Device.self
         )
 
+        let url = URL(string: "tonsnow://current/account/\(payload.account)")
         for try await device in devices {
             let alert = PushPayload(
                 token: device.pushToken.token,
                 title: "Balance updated",
                 subtitle: "\(shortAccountName)",
-                message: "Current balance: \(balanceFormatted)"
+                message: "Current balance: \(balanceFormatted)",
+                url: url
             )
             try await context.queue.dispatch(SendPushJob.self, alert)
         }
